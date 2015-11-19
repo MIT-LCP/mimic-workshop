@@ -1,6 +1,10 @@
 # MIMIC Critical Care Datathon
 
-These are training materials for the MIMIC Critical Care Datathon at Mozfest 2015. 
+These are training materials for the MIMIC Critical Care Database. The package includes:
+
+- a demo version of MIMIC which can be quickly installed in the Firefox web browser with the SQLite Plugin.
+- some sample SQL queries which can be used to query the MIMIC data
+- an iPython Notebook which connects to the demo MIMIC database, allowing the data to be analysed using Python.
 
 ## What is MIMIC-III?
 
