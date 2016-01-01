@@ -28,25 +28,32 @@ SQL stands for "structured query language". It is the standard language used for
 TIP: queries are generally constructed using the following syntax:
 
 ```sql
-SELECT <columns> FROM <table> WHERE <constraint>
+SELECT <columns>  
+FROM <table>  
+WHERE <constraints>;
 ```
 
 ### Select all of the columns ('*') from the patients table
 
 ```sql
-SELECT * FROM patients;
+SELECT *  
+FROM patients;
 ```
 
 ### Select all of the columns ('*') from the patients table where the patient is female
 
 ```sql
-SELECT * FROM patients WHERE gender = 'F';
+SELECT * 
+FROM patients 
+WHERE gender = 'F';
 ```
 
 ### Select all of the columns ('*') from the patients table for a single patient
 
 ```sql
-SELECT * FROM patients WHERE subject_id = 40080;
+SELECT * 
+FROM patients 
+WHERE subject_id = 40080;
 ```
 
 ## More example queries
@@ -164,6 +171,6 @@ WHERE subject_id = 40080;
 SELECT ce.*, di.label
 FROM chartevents ce
 INNER JOIN d_items di
-  ON ce.itemid = di.itemid
+ON ce.itemid = di.itemid
 WHERE subject_id = 40080;
 ```
