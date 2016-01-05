@@ -103,7 +103,7 @@ col = [0.9047    0.1918    0.1988
     0.5313    0.3359    0.6523];
 marker = {'d','+','o','x','>','s','<','+','^'};
 ms = repmat(8,1,numel(marker));
-savefigflag=1;
+savefigflag=0;
 %% Plot the vital signs
 figure(1); clf; hold all;
 example_patient_matlab_ce;
