@@ -17,7 +17,7 @@ During the workshop, you will:
 
 ## Set up a mini version of MIMIC-III on your computer
 
-* MIMIC-III contains over 40,000 patients, but for the workshop we will be working with a subset of 9 patients.
+* MIMIC-III contains over 40,000 patients, but for the workshop we will be working with a subset of patients.
 * To create the database on your computer, you will need to install Firefox and the Firefox SQLite Manager Add-on. Open Firefox, select "Add-ons" from the Tools menu, and then install SQLite Manager.
 * After restarting Firefox, select "SQLite Manager" from the tools menu. In SQLite Manager, click "Connect Database" in the menu, and select the "data/mimicdata.sqlite" database file.
 
@@ -33,26 +33,26 @@ FROM <table>
 WHERE <constraints>;
 ```
 
-### Select all of the columns ('*') from the patients table
+### Select all of the columns ('\*') from the patients table
 
 ```sql
 SELECT *  
 FROM patients;
 ```
 
-### Select all of the columns ('*') from the patients table where the patient is female
+### Select all of the columns ('\*') from the patients table where the patient is female
 
 ```sql
-SELECT * 
-FROM patients 
+SELECT *
+FROM patients
 WHERE gender = 'F';
 ```
 
-### Select all of the columns ('*') from the patients table for a single patient
+### Select all of the columns ('\*') from the patients table for a single patient
 
 ```sql
-SELECT * 
-FROM patients 
+SELECT *
+FROM patients
 WHERE subject_id = 40080;
 ```
 
@@ -81,7 +81,7 @@ WHERE gender = 'F';
 
 ### Select a single patient by specifying their `subject_id`
 
-Note that we need to specify which table the `subject_id` is sourced from (`patients.subject_id`). 
+Note that we need to specify which table the `subject_id` is sourced from (`patients.subject_id`).
 This is because there are two `subject_id` columns: one from patients and the other from admissions.
 SQL will not know which table to choose from, so you must specify it.
 
@@ -96,7 +96,7 @@ AND patients.subject_id = 40080;
 
 ### Select only data from the patients table
 
-We can use the table name with a wild card (*) to specify all columns from that table.
+We can use the table name with a wild card (\*) to specify all columns from that table.
 
 ```sql
 SELECT patients.*
