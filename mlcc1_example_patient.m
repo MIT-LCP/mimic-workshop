@@ -26,7 +26,7 @@ javaclasspath('sqlite-jdbc-3.8.11.2.jar') % use this for SQLite
 
 % STEP 2: Connect to the Database
 conn = database('','','',...
-    'org.sqlite.JDBC',['jdbc:sqlite:' pwd filesep 'data' filesep 'mimicdata.sqlite']);
+    'org.sqlite.JDBC',['jdbc:sqlite:' pwd filesep 'data' filesep 'mimiciii_v1_3_mini.sqlite']);
 
 
 % Note: Amazon RDS instructions - will be slower as it is the full database
@@ -46,27 +46,28 @@ data_ce = fetch(conn,query);
 %% 4 - Plot patient vital signs
 figure(1); clf; hold all;
 
-lbl_plot = {'Non Invasive Blood Pressure mean',...
+lbl_plot = {'Arterial BP Mean',...
     'Heart Rate',...
-    'O2 saturation pulseoxymetry',...
+    'SpO2',...
     'Respiratory Rate'};
 
 % loop through the above list of labels
 for k=1:numel(lbl_plot)
     % create an index for only the label we are interested in
-    idxPlot = ismember(data_ce(:,6), lbl_plot{k});
+    idxPlot = ismember(data_ce(:,2), lbl_plot{k});
     
-    % the 2nd column is the time, and the 5th column is VALUENUM, the numeric value
-    data_plot = cell2mat(data_ce(idxPlot,5));
-    time_plot = cell2mat(data_ce(idxPlot,2));
+    % the 3rd column is the time, and the 6th column is VALUENUM, the numeric value
+    data_plot = cell2mat(data_ce(idxPlot,6));
+    time_plot = cell2mat(data_ce(idxPlot,3));
     
     % plot the data for this label
-    plot(time_plot, data_plot, marker{k},...
+    plot(time_plot, data_plot,...
+        'LineStyle','--', 'Marker',marker{k},...
         'Color', col(k,:), 'MarkerFaceColor', col_fill(k,:),...
         'markersize', ms, 'linewidth',2);
 end
 
-set(gca,'XLim',[0,24],'YLim',[0,150]);
+set(gca,'XLim',[0,72],'YLim',[0,150]);
 set(gca,'YTick',0:25:150);
 
 xlabel('Hours since ICU admission','FontSize',16);
@@ -80,7 +81,7 @@ grid on;
 %% 5 - What else could you add to the above plot? Add labels to lbl_plot.
 
 % here is a list of the available labels:
-unique(data_ce(:,6))
+unique(data_ce(:,2))
 
 
 %% 6 - Extract lab values
@@ -89,20 +90,17 @@ data_le = fetch(conn,query);
 
 %% 7 - Plot lab values
 figure(1); clf; hold all;
-marker = {'d','+','o','x','>','d','<','+','^'};
-lbl_plot = {'CREATININE';
-    'HEMOGLOBIN';
-    'LACTATE'};
+lbl_plot = {'CREATININE','HEMOGLOBIN','LACTATE'};
 
 % plot the values
 for k=1:numel(lbl_plot)
     
     % create an index for only the label we are interested in
-    idxPlot = ismember(data_le(:,6), lbl_plot{k});
+    idxPlot = ismember(data_le(:,2), lbl_plot{k});
     
-    % the 2nd column is the time, and the 5th column is VALUENUM, the numeric value
-    data_plot = cell2mat(data_le(idxPlot,5));
-    time_plot = cell2mat(data_le(idxPlot,2));
+    % the 3rd column is the time, and the 6th column is VALUENUM, the numeric value
+    data_plot = cell2mat(data_le(idxPlot,6));
+    time_plot = cell2mat(data_le(idxPlot,3));
     
     % plot the data for this label
     plot(time_plot, data_plot,...
@@ -111,7 +109,7 @@ for k=1:numel(lbl_plot)
         'markersize',ms,'linewidth',2);
 end
 legend(lbl_plot,'Location','NorthEast');
-set(gca,'XLim',[0,24],'YLim',[0,25]);
+set(gca,'XLim',[0,72],'YLim',[0,25],'FontSize',14);
 grid on;
 
 xlabel('Hours since ICU admission','FontSize',16);
@@ -121,22 +119,23 @@ ylabel('Value of measurement','FontSize',16);
 %% 8 - What else could you add to the above plot? Add labels to lbl_plot.
 
 % here is a list of the available labels:
-unique(data_le(:,6))
+unique(data_le(:,2))
 
 %% 9 - Extract output values
 query = makeQuery('expt-query-3.sql');
 data_oe = fetch(conn,query);
 
 %% 10 - Plot the outputs
-lbl_plot = {'Urine Output'};
+figure(1); clf; hold all;
+lbl_plot = {'Urine Out Foley'};
 for k=1:numel(lbl_plot)
     
     % create an index for only the label we are interested in
-    idxPlot = ismember(data_oe(:,6), lbl_plot{k});
+    idxPlot = ismember(data_oe(:,2), lbl_plot{k});
     
-    % the 2nd column is the time, and the 5th column is VALUENUM, the numeric value
-    data_plot = cell2mat(data_oe(idxPlot,5));
-    time_plot = cell2mat(data_oe(idxPlot,2));
+    % the 3rd column is the time, and the 6th column is VALUENUM, the numeric value
+    data_plot = cell2mat(data_oe(idxPlot,6));
+    time_plot = cell2mat(data_oe(idxPlot,3));
     
     plot(time_plot, data_plot,...
         'LineStyle','--','Marker',marker{k},...
@@ -145,31 +144,39 @@ for k=1:numel(lbl_plot)
 end
 
 legend(lbl_plot,'Location','NorthEast');
-set(gca,'XLim',[0,24],'YLim',[0,200]);
+set(gca,'XLim',[0,72],'YLim',[0,1000],'FontSize',14);
 
 xlabel('Hours since ICU admission','FontSize',16);
 ylabel('Value of measurement','FontSize',16);
+grid on;
 
 %% 11 - What else could you add to the above plot? Add labels to lbl_plot.
 
 % here is a list of the available labels:
-unique(data_ie(:,6))
-
+unique(data_oe(:,2))
 
 %% 12 - Extract input values
 query = makeQuery('expt-query-4.sql');
 data_ie = fetch(conn,query);
 
+% this is a fix to replace empty cells with "NaN"
+% SQL represents missing values as empty, but MATLAB represents them as NaN
+data_ie(cellfun(@isempty, data_ie(:,5)),5) = {NaN};
+data_ie(cellfun(@isempty, data_ie(:,7)),7) = {NaN};
 %% 13 - Plot the inputs
-lbl_plot = {};
+figure(1); clf; hold all;
+lbl_plot = {'Neosynephrine-k','Propofol'};
 for k=1:numel(lbl_plot)
     
     % create an index for only the label we are interested in
-    idxPlot = ismember(data_ie(:,6), lbl_plot{k});
+    idxPlot = ismember(data_ie(:,2), lbl_plot{k});
     
-    % the 2nd column is the time, and the 5th column is VALUENUM, the numeric value
-    data_plot = cell2mat(data_ie(idxPlot,5));
-    time_plot = cell2mat(data_ie(idxPlot,2));
+    % the 3rd column is the time
+    % for inputs, the order is slightly different:
+    %   the 5th column is the VOLUME
+    %   the 7th column is the RATE
+    data_plot = cell2mat(data_ie(idxPlot,7));
+    time_plot = cell2mat(data_ie(idxPlot,3));
     
     plot(time_plot, data_plot,...
         'LineStyle','--','Marker',marker{k},...
@@ -177,8 +184,10 @@ for k=1:numel(lbl_plot)
         'linewidth',2,'markersize',ms);
 end
 
-legend(lbl_plot,'Location','NorthEast');
-set(gca,'XLim',[0,24],'YLim',[0,200]);
+legend(lbl_plot,'Location','NorthWest');
+set(gca,'XLim',[0,72],'YLim',[0,100],'FontSize',14);
+
+grid on;
 
 xlabel('Hours since ICU admission','FontSize',16);
 ylabel('Value of measurement','FontSize',16);
@@ -187,79 +196,87 @@ ylabel('Value of measurement','FontSize',16);
 %% 14 - What else could you add to the above plot? Add labels to lbl_plot.
 
 % here is a list of the available labels:
-unique(data_ie(:,6))
+unique(data_ie(:,2))
 
 
 %% 15 - Bring it all together
+lbl_ce = {'Arterial BP Mean','Heart Rate','SpO2','Respiratory Rate'};
+lbl_le = {'CREATININE','HEMOGLOBIN','LACTATE'};
+lbl_oe = {'Urine Out Foley'};
+lbl_ie = {'Neosynephrine-k','Propofol'};
 
-lbl_ce = {};
-lbl_le = {};
-lbl_oe = {};
-lbl_ie = {};
+figure(1); clf; hold all;
 
+k_offset = 0;
 % Plot the chart values
 for k=1:numel(lbl_ce)
     % create an index for only the label we are interested in
-    idxPlot = ismember(data_ce(:,6), lbl_ce{k});
+    idxPlot = ismember(data_ce(:,2), lbl_ce{k});
     
-    % the 2nd column is the time, and the 5th column is VALUENUM, the numeric value
-    data_plot = cell2mat(data_ce(idxPlot,5));
-    time_plot = cell2mat(data_ce(idxPlot,2));
+    % the 3rd column is the time, and the 6th column is VALUENUM, the numeric value
+    data_plot = cell2mat(data_ce(idxPlot,6));
+    time_plot = cell2mat(data_ce(idxPlot,3));
     
     % plot the data for this label
     plot(time_plot, data_plot, marker{k},...
-        'Color', col(k,:), 'MarkerFaceColor', col_fill(k,:),...
+        'Color', col(k+k_offset,:), 'MarkerFaceColor', col_fill(k+k_offset,:),...
         'markersize', ms, 'linewidth',2);
 end
-
+k_offset=k_offset+k;
 
 % Plot the lab values
 for k=1:numel(lbl_le)
     
     % create an index for only the label we are interested in
-    idxPlot = ismember(data_le(:,6), lbl_le{k});
+    idxPlot = ismember(data_le(:,2), lbl_le{k});
     
-    % the 2nd column is the time, and the 5th column is VALUENUM, the numeric value
-    data_plot = cell2mat(data_le(idxPlot,5));
-    time_plot = cell2mat(data_le(idxPlot,2));
+    % the 3rd column is the time, and the 6th column is VALUENUM, the numeric value
+    data_plot = cell2mat(data_le(idxPlot,6));
+    time_plot = cell2mat(data_le(idxPlot,3));
     
     % plot the data for this label
     plot(time_plot, data_plot,...
-        'LineStyle','--','Marker',marker{k},...
-        'Color',col(k,:), 'markerfacecolor',col_fill(k,:),...
+        'LineStyle','--','Marker',marker{k+k_offset},...
+        'Color',col(k+k_offset,:), 'markerfacecolor',col_fill(k+k_offset,:),...
         'markersize',ms,'linewidth',2);
 end
+k_offset=k_offset+k;
 
 % Plot the outputs
 for k=1:numel(lbl_oe)
     
     % create an index for only the label we are interested in
-    idxPlot = ismember(data_oe(:,6), lbl_oe{k});
+    idxPlot = ismember(data_oe(:,2), lbl_oe{k});
     
-    % the 2nd column is the time, and the 5th column is VALUENUM, the numeric value
-    data_plot = cell2mat(data_oe(idxPlot,5));
-    time_plot = cell2mat(data_oe(idxPlot,2));
+    % the 3rd column is the time, and the 6th column is VALUENUM, the numeric value
+    data_plot = cell2mat(data_oe(idxPlot,6));
+    time_plot = cell2mat(data_oe(idxPlot,3));
     
     plot(time_plot, data_plot,...
-        'LineStyle','--','Marker',marker{k},...
-        'color',col(k,:), 'markerfacecolor',col_fill(k,:),...
+        'LineStyle','--','Marker',marker{k+k_offset},...
+        'color',col(k+k_offset,:), 'markerfacecolor',col_fill(k+k_offset,:),...
         'linewidth',2,'markersize',ms);
 end
+k_offset=k_offset+k;
 
 % Plot the inputs
 for k=1:numel(lbl_ie)
     % create an index for only the label we are interested in
-    idxPlot = ismember(data_ie(:,6), lbl_ie{k});
+    idxPlot = ismember(data_ie(:,2), lbl_ie{k});
     
-    % the 2nd column is the time, and the 5th column is VALUENUM, the numeric value
-    data_plot = cell2mat(data_ie(idxPlot,5));
-    time_plot = cell2mat(data_ie(idxPlot,2));
+    % the 3rd column is the time
+    % for inputs, the order is slightly different:
+    %   the 5th column is the VOLUME
+    %   the 7th column is the RATE
+    data_plot = cell2mat(data_ie(idxPlot,7));
+    time_plot = cell2mat(data_ie(idxPlot,3));
     
     plot(time_plot, data_plot,...
-        'LineStyle','--','Marker',marker{k},...
-        'color',col(k,:), 'markerfacecolor',col_fill(k,:),...
+        'LineStyle','--','Marker',marker{k+k_offset},...
+        'color',col(k+k_offset,:), 'markerfacecolor',col_fill(k+k_offset,:),...
         'linewidth',2,'markersize',ms);
 end
+k_offset=k_offset+k;
 
 
 
