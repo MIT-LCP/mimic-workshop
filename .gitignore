@@ -1,3 +1,6 @@
+# CSV files with example data
+example-patient/*.csv
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
