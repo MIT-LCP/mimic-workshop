@@ -23,7 +23,7 @@ select
 from icustays ie
 -- join to the admissions table to get hospital outcome
 inner join admissions adm
-  on tmptbl.hadm_id = adm.hadm_id
+  on ie.hadm_id = adm.hadm_id
 
 -- join to the chartevents table to get the observations
 left join chartevents ce
@@ -53,6 +53,6 @@ left join chartevents ce
 
 -- The below line states "group everything by icustay_id"
 -- That means that we take the max( HEART RATE ) grouped by ICUSTAY_ID
--- or, normal words, we take the maximum heart rate for each patient's ICU stay 
-group by tmptbl.icustay_id
-order by tmptbl.icustay_id;
+-- or, normal words, we take the maximum heart rate for each patient's ICU stay
+group by ie.icustay_id
+order by ie.icustay_id;
