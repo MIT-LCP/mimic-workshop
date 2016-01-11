@@ -1,18 +1,17 @@
 
 -- Staging table #1: CHARTEVENTS
-with ce_stg as
+with ce as
 (
-  select ie.icustay_id
-  , case
-      when itemid in (211,220045) then 1 -- HeartRate
-      when itemid in (456,52,6702,443,220052,220181,225312) then 4 -- MeanBP
-      when itemid in (615,618,220210,224690) then 5 -- RespRate
-      else null end as VitalID
-  , valuenum
-  from icustays ie
+  select adm.hadm_id
+  , min(case when itemid in (211,220045) then valuenum else null end) as HeartRate_Min
+  , max(case when itemid in (211,220045)  then valuenum else null end) as HeartRate_Max
+  , min(case when itemid in (456,52,6702,443,220052,220181,225312) then valuenum else null end) as MeanBP_Min
+  , max(case when itemid in (456,52,6702,443,220052,220181,225312)  then valuenum else null end) as MeanBP_Max
+  , min(case when itemid in (615,618,220210,224690)  then valuenum else null end) as RespRate_Min
+  , max(case when itemid in (615,618,220210,224690)  then valuenum else null end) as RespRate_Max
+  from admissions adm
   left join chartevents chart
-    on ie.subject_id = chart.subject_id and ie.hadm_id = chart.hadm_id and ie.icustay_id = chart.icustay_id
-    and chart.charttime >= ie.intime and chart.charttime <= date(ie.intime,'+1 day')
+    on adm.hadm_id = chart.hadm_id
     and chart.itemid in
     (
     -- HEART RATE
@@ -34,79 +33,30 @@ with ce_stg as
     220210,--	Respiratory Rate
     224690 --	Respiratory Rate (Total)
     )
-)
--- Aggregate table #1: CHARTEVENTS
-, ce as
-(
-  SELECT ce_stg.icustay_id
-  , min(case when VitalID = 1 then valuenum else null end) as HeartRate_Min
-  , max(case when VitalID = 1 then valuenum else null end) as HeartRate_Max
-  , min(case when VitalID = 4 then valuenum else null end) as MeanBP_Min
-  , max(case when VitalID = 4 then valuenum else null end) as MeanBP_Max
-  , min(case when VitalID = 5 then valuenum else null end) as RespRate_Min
-  , max(case when VitalID = 5 then valuenum else null end) as RespRate_Max
-  FROM ce_stg
-  group by ce_stg.icustay_id
-)
-
--- Staging table #2: GCS
--- Because we need to add together GCS components, we do it seperately from chartevents
-, gcs_stg as
-(
-  select ie.icustay_id, chart.charttime
-  , max(case when itemid in (723,223900) then valuenum else null end) as GCSVerbal
-  , max(case when itemid in (454,223901) then valuenum else null end) as GCSMotor
-  , max(case when itemid in (184,220739) then valuenum else null end) as GCSEyes
-  from icustays ie
-  left join chartevents chart
-    on ie.subject_id = chart.subject_id and ie.hadm_id = chart.hadm_id and ie.icustay_id = chart.icustay_id
-    and chart.charttime >= ie.intime and chart.charttime <= date(ie.intime,'+1 day')
-    and chart.itemid in
-    (
-      723, -- GCSVerbal
-      454, -- GCSMotor
-      184, -- GCSEyes
-      223900, -- GCS - Verbal Response
-      223901, -- GCS - Motor Response
-      220739 -- GCS - Eye Opening
-    )
-  group by ie.icustay_id, chart.charttime
-)
--- Aggregate table #2: GCS
-, gcs as
-(
-  SELECT gcs_stg.icustay_id
-  , min(GCSVerbal + GCSMotor + GCSEyes) as GCS_Min
-  , max(GCSVerbal + GCSMotor + GCSEyes) as GCS_Max
-  FROM gcs_stg
-  group by gcs_stg.icustay_id
+    group by adm.hadm_id
 )
 -- Staging table #3: LABEVENTS
-, le_stg as
+, le as
 (
-  select ie.icustay_id
-    -- here we assign labels to ITEMIDs
-    -- this also fuses together multiple ITEMIDs containing the same data
-    , case
-          when itemid = 50885 then 'BILIRUBIN'
-          when itemid = 50912 then 'CREATININE'
-          when itemid = 50809 then 'GLUCOSE'
-          when itemid = 50931 then 'GLUCOSE'
-          when itemid = 50811 then 'HEMOGLOBIN'
-          when itemid = 51222 then 'HEMOGLOBIN'
-          when itemid = 50824 then 'SODIUM'
-          when itemid = 50983 then 'SODIUM'
-          when itemid = 51300 then 'WBC'
-          when itemid = 51301 then 'WBC'
-        else null
-      end as label
-    , valuenum
+  select adm.hadm_id
+  , min(case when itemid = 50885 then valuenum else null end) as BILIRUBIN_min
+  , max(case when itemid = 50885 then valuenum else null end) as BILIRUBIN_max
+  , min(case when itemid = 50912 then valuenum else null end) as CREATININE_min
+  , max(case when itemid = 50912 then valuenum else null end) as CREATININE_max
+  , min(case when itemid in (50809,50931) then valuenum else null end) as GLUCOSE_min
+  , max(case when itemid in (50809,50931) then valuenum else null end) as GLUCOSE_max
+  , min(case when itemid in (50811,51222) then valuenum else null end) as HEMOGLOBIN_min
+  , max(case when itemid in (50811,51222) then valuenum else null end) as HEMOGLOBIN_max
+  , min(case when itemid in (50824,50983) then valuenum else null end) as SODIUM_min
+  , max(case when itemid in (50824,50983) then valuenum else null end) as SODIUM_max
+  , min(case when itemid in (51300,51301) then valuenum else null end) as WBC_min
+  , max(case when itemid in (51300,51301) then valuenum else null end) as WBC_max
 
-    from icustays ie
+    from admissions adm
 
     left join labevents lab
-      on ie.subject_id = lab.subject_id and ie.hadm_id = lab.hadm_id
-      and lab.charttime >= date(ie.intime,'-6 hour') and lab.charttime <= date(ie.intime,'+1 day')
+      on adm.subject_id = lab.subject_id and adm.hadm_id = lab.hadm_id
+      and lab.charttime >= adm.admittime and lab.charttime <= adm.dischtime
       and lab.ITEMID in
       (
         -- comment is: LABEL | CATEGORY | FLUID | NUMBER OF ROWS IN LABEVENTS
@@ -122,32 +72,46 @@ with ce_stg as
         51300  -- WBC COUNT | HEMATOLOGY | BLOOD | 2371
       )
       and lab.valuenum is not null and lab.valuenum > 0 -- lab values cannot be 0 and cannot be negative
+    group by adm.hadm_id
 )
 
--- Aggregate table #3: LABEVENTS
-, le as
+-- Staging table #2: GCS
+-- Because we need to add together GCS components, we do it seperately from chartevents
+-- This lets us group together the components by their CHARTTIME
+-- Then we can add together components measured at the same time
+, gcs_stg as
 (
-  select
-    le_stg.icustay_id
-
-    , min(case when label = 'BILIRUBIN' then valuenum else null end) as BILIRUBIN_min
-    , max(case when label = 'BILIRUBIN' then valuenum else null end) as BILIRUBIN_max
-    , min(case when label = 'CREATININE' then valuenum else null end) as CREATININE_min
-    , max(case when label = 'CREATININE' then valuenum else null end) as CREATININE_max
-    , min(case when label = 'HEMOGLOBIN' then valuenum else null end) as HEMOGLOBIN_min
-    , max(case when label = 'HEMOGLOBIN' then valuenum else null end) as HEMOGLOBIN_max
-    , min(case when label = 'SODIUM' then valuenum else null end) as SODIUM_min
-    , max(case when label = 'SODIUM' then valuenum else null end) as SODIUM_max
-    , min(case when label = 'WBC' then valuenum else null end) as WBC_min
-    , max(case when label = 'WBC' then valuenum else null end) as WBC_max
-
-  from le_stg
-  group by le_stg.icustay_id
+  select adm.hadm_id, chart.charttime
+  , max(case when itemid in (723,223900) then valuenum else null end) as GCSVerbal
+  , max(case when itemid in (454,223901) then valuenum else null end) as GCSMotor
+  , max(case when itemid in (184,220739) then valuenum else null end) as GCSEyes
+  from admissions adm
+  left join chartevents chart
+    on adm.hadm_id = chart.hadm_id
+    and chart.itemid in
+    (
+      723, -- GCSVerbal
+      454, -- GCSMotor
+      184, -- GCSEyes
+      223900, -- GCS - Verbal Response
+      223901, -- GCS - Motor Response
+      220739 -- GCS - Eye Opening
+    )
+  group by adm.hadm_id, chart.charttime
+)
+-- Aggregate table #2: GCS
+, gcs as
+(
+  SELECT gcs_stg.hadm_id
+  , min(GCSVerbal + GCSMotor + GCSEyes) as GCS_Min
+  , max(GCSVerbal + GCSMotor + GCSEyes) as GCS_Max
+  FROM gcs_stg
+  group by gcs_stg.hadm_id
 )
 
-SELECT ie.icustay_id
+SELECT adm.hadm_id
 , adm.HOSPITAL_EXPIRE_FLAG -- whether the patient died within the hospital
-, round( (julianday(ie.intime) - julianday(pat.dob))/365.24, 4) as Age
+, round( (julianday(adm.admittime) - julianday(pat.dob))/365.24, 4) as Age
 
 , HeartRate_Min
 , HeartRate_Max
@@ -163,6 +127,8 @@ SELECT ie.icustay_id
 , BILIRUBIN_max
 , CREATININE_min
 , CREATININE_max
+, GLUCOSE_min
+, GLUCOSE_max
 , HEMOGLOBIN_min
 , HEMOGLOBIN_max
 , SODIUM_min
@@ -170,14 +136,12 @@ SELECT ie.icustay_id
 , WBC_min
 , WBC_max
 
-FROM icustays ie
-inner join admissions adm
-  on ie.hadm_id = adm.hadm_id
+FROM admissions adm
 inner join patients pat
-  on ie.subject_id = pat.subject_id
+  on adm.subject_id = pat.subject_id
 left join ce
-  on ie.icustay_id = ce.icustay_id
+  on adm.hadm_id = ce.hadm_id
 left join gcs
-  on ie.icustay_id = gcs.icustay_id
+  on adm.hadm_id = gcs.hadm_id
 left join le
-  on ie.icustay_id = le.icustay_id
+  on adm.hadm_id = le.hadm_id
