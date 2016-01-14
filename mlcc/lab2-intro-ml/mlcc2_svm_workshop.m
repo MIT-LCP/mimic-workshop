@@ -29,8 +29,6 @@ else
     fprintf('Could not find LIBSVM. Make sure it''s added to the path.\n');
 end
 
-%% Load the data
-
 %% (Option 1) If you finished the assignment, load your data here
 
 % STEP 1: Tell Matlab where the driver is
@@ -40,11 +38,18 @@ javaclasspath('sqlite-jdbc-3.8.11.2.jar') % use this for SQLite
 conn = database('','','',...
     'org.sqlite.JDBC',['jdbc:sqlite:' pwd filesep 'data' filesep 'mimiciii_v1_3_demo.sqlite']);
 
+% Use your homework here!
+% query = makeQuery(fileNameForQuery);
+% data = fetch(conn, query)
 
 %% (Option 2) Load the data from the .mat file provided
 
 % Loads in 'X', 'X_header', and 'y' variables
 load('MLCCData.mat'); 
+
+X = X(:,3:5);
+X_header = header(3:5);
+y = X(:,2);
 
 %% Before we train a model - let's inspect the data
 idxTarget = y == 1; % note: '=' defines a number, '==' compares two variables
@@ -136,13 +141,16 @@ pred = svmpredict(y, X, model_rbf);
 
 %% Optimize the RBF kernel
 % Let's see how much better we can make our model!
-% change gamma and capacity below to try and improve your performance
-% Keep them as integers, 
+% change gamma below to try and improve your performance
+% Keep it as an integer!
 
-gamma = ?;
-capacity = ?;
+% Also, I would recommend *not* running the train in cell mode - it can
+% crash
 
-% train the model
+capacity = 1;
+gamma = ??
+
+%% train the model
 model_rbf = svmtrain(y, X, ['-t 2 -c ' num2str(2^(capacity)) ' -g ' num2str(2^(gamma))]);
 pred = svmpredict(y, X, model_rbf);
 
