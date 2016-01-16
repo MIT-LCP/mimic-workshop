@@ -32,7 +32,7 @@ end
 %% Run the following to connect to the database
 
 % STEP 1: Tell Matlab where the driver is
-javaclasspath('sqlite-jdbc-3.8.11.2.jar') % use this for SQLite
+javaclasspath([pwd filesep 'data' filesep 'sqlite-jdbc-3.8.11.2.jar']) % use this for SQLite
 
 % STEP 2: Connect to the Database
 conn = database('','','',...
@@ -41,7 +41,7 @@ conn = database('','','',...
 %% Option 1. Extract the patient data using the query from your assignment
 % At the moment this query is long, and takes ~5 minutes
 setdbprefs('DataReturnFormat','dataset')
-query = makeQuery('mlcc1-problem-set-solutions.sql');
+query = makeQuery('mlcc2-query.sql');
 data = fetch(conn,query);
 
 % now convert data to a cell array
@@ -85,8 +85,8 @@ end
 
 %% First, let's choose the data we'd like to work with
 
-[idxData,idxOrder] = ismember(header,{'HeartRateMin','MeanBPMin','Age'});
-
+% [idxData,idxOrder] = ismember(header,{'HeartRateMin','MeanBPMin','Age'});
+idxData = 3:5;
 X = data(:,idxData);
 X_header = header(idxData);
 

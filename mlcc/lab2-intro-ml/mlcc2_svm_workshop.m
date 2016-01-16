@@ -29,27 +29,19 @@ else
     fprintf('Could not find LIBSVM. Make sure it''s added to the path.\n');
 end
 
-%% (Option 1) If you finished the assignment, load your data here
-
-% STEP 1: Tell Matlab where the driver is
-javaclasspath('sqlite-jdbc-3.8.11.2.jar') % use this for SQLite
-
-% STEP 2: Connect to the Database
-conn = database('','','',...
-    'org.sqlite.JDBC',['jdbc:sqlite:' pwd filesep 'data' filesep 'mimiciii_v1_3_demo.sqlite']);
-
-% Use your homework here!
-% query = makeQuery(fileNameForQuery);
-% data = fetch(conn, query)
-
-%% (Option 2) Load the data from the .mat file provided
+%% (Option 3) Load the ICU data from the .mat file provided
 
 % Loads in 'X', 'X_header', and 'y' variables
 load('MLCCData.mat'); 
 
-X = X(:,3:5);
-X_header = header(3:5);
-y = X(:,2);
+
+idxData = ismember(header,{'Age','HeartRateMin','MeanBPMin'});
+
+X = data(:,idxData);
+X_header = header(idxData);
+y = data(:,2);
+
+X_header
 
 %% Before we train a model - let's inspect the data
 idxTarget = y == 1; % note: '=' defines a number, '==' compares two variables
@@ -76,7 +68,7 @@ set(gca,'view',[45 25]); % a nice isometric view
 
 %% Correct the erroneous ages
 % Hint: the median age of patients > 89 is 91.6.
-
+X( X(:,1) > 89, 1 ) = 91.6;
 
 %% Normalize the data!
 % First get the column wise mean and the column wise standard deviation
@@ -86,11 +78,6 @@ sigma = nanstd(X, [], 1);
 % Now subtract each element of mu from each column of X
 X = bsxfun(@minus, X, mu);
 X = bsxfun(@rdivide, X, sigma);
-
-
-% Missing data:
-% Our data has missing values. How should we pre-process these?
-
 %% We will be using libsvm. If you call svmtrain on its own, it lists the options
 svmtrain;
 
@@ -102,10 +89,67 @@ model = svmtrain(y, X, '-t 0');
 % Apply the classifier to the data set
 pred = svmpredict(y, X, model);
 
+
+%% Make sure we impute a value for missing data, otherwise the models can't train
+X( isnan(X) ) = 0;
+
+
 %% Evaluate the model - plot a confusion matrix
 figure(1); % this tells MATLAB to plot in figure 1
 clf; % this clears any information currently on the figure
 
+
+%% Using LIBSVM, train an SVM classifier with a linear kernel
+model_linear = svmtrain(y, X, '-t 0');
+% Atypically, LIBSVM receives options as a single string in the fourth input
+% e.g. '-v 1 -b 1 -g 0.5 -c 1'
+
+% Apply the classifier to the data set
+pred = svmpredict(y, X, model_linear);
+
+%% 
+figure(1); clf; hold all;
+idxTarget = y == 1; % note: '=' defines a number, '==' compares two variables
+
+% We would like to plot the original data because it's in units we understand (e.g. age in years)
+% we can un-normalize the data for plotting:
+X_orig = bsxfun(@times, X, sigma);
+X_orig = bsxfun(@plus, X_orig, mu);
+
+plot3(X_orig(idxTarget,1),X_orig(idxTarget,2),X_orig(idxTarget,3),...
+    'Linestyle','none','Marker','x',...
+    'MarkerFaceColor',col(1,:),'MarkerEdgeColor',col(1,:),...
+    'MarkerSize',10,'LineWidth',2);
+plot3(X_orig(~idxTarget,1),X_orig(~idxTarget,2),X_orig(~idxTarget,3),...
+    'Linestyle','none','Marker','+',...
+    'MarkerFaceColor',col(2,:),'MarkerEdgeColor',col(2,:),...
+    'MarkerSize',10,'LineWidth',2);
+% plot3(X_orig(pred==1,1),X_orig(pred==1,2),X_orig(pred==1,3),...
+%     'Linestyle','none','Marker','o',...
+%     'MarkerFaceColor','none','MarkerEdgeColor',col(1,:),...
+%     'MarkerSize',10,'LineWidth',2,...
+%     'HandleVisibility','off');
+grid on;
+
+xi = -3:0.25:3;
+yi = -3:0.25:0;
+
+
+% plot the hyperplane
+w = model_linear.SVs' * model_linear.sv_coef;
+b = model_linear.rho;
+[XX,YY] = meshgrid(xi,yi);
+ZZ=(b - w(1) * XX - w(2) * YY)/w(3);
+XX = XX*sigma(1) + mu(1);
+YY = YY*sigma(2) + mu(2);
+ZZ = ZZ*sigma(3) + mu(3);
+mesh(XX,YY,ZZ,'EdgeColor',col(5,:),'FaceColor','none');
+
+legend({'Died in hospital','Survived'},'FontSize',16);
+xlabel(X_header{1},'FontSize',16);
+ylabel(X_header{2},'FontSize',16);
+zlabel(X_header{3},'FontSize',16);
+set(gca,'view',[-127    10]);
 
 %% Now let's try with an RBF kernel
 % This is LIBSVM's most flexible kernel
