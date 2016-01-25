@@ -71,10 +71,10 @@ data = cell2mat(data);
 
 
 X_id = data(:, strcmp(header,'ICUSTAYID'));
-y = data(:, strcmp(header,'HOSPITALEXPIREFLAG'));
+y = data(:, strcmp(header,'OUTCOME'));
 
-X = data(:, ~ismember( header, {'ICUSTAYID','HOSPITALEXPIREFLAG'}) );
-X_header = header(~ismember( header, {'ICUSTAYID','HOSPITALEXPIREFLAG'}));
+X = data(:, ~ismember( header, {'ICUSTAYID','OUTCOME'}) );
+X_header = header(~ismember( header, {'ICUSTAYID','OUTCOME'}));
 
 %% Print out the first 5 rows of the data
 W = 5; % the maximum number of columns to print at one time
@@ -84,7 +84,7 @@ for o=1:floor(size(X,2)/W)
     if idxColumn(end) > size(X,2)
         idxColumn = idxColumn(1):size(X,2);
     end
-    
+
     fprintf('%12s\t',X_header{idxColumn});
     fprintf('\n');
     for n=1:5
@@ -143,43 +143,43 @@ auroc = zeros(1,K);
 for k=1:K
     idxDevelop  = idxK ~= k;
     idxValidate = idxK == k;
-    
+
     X_develop = X_train(idxDevelop,:);
     y_develop = y_train(idxDevelop,:);
-    
+
     X_validate = X_train(idxValidate,:);
     y_validate = y_train(idxValidate,:);
-    
+
     % Normalize and impute means for the data before training
-    
+
     % Normalize the data
     mu = nanmean(X_develop, 1);
     sigma = nanstd(X_develop, [], 1);
     X_develop = bsxfun(@minus, X_develop, mu);
     X_develop = bsxfun(@rdivide, X_develop, sigma);
-    
+
     X_validate = bsxfun(@minus, X_validate, mu);
     X_validate = bsxfun(@rdivide, X_validate, sigma);
-    
+
     % Impute the mean (equal to 0 since we normalized the mean to be 0)
     X_develop(isnan(X_develop)) = 0;
     X_validate(isnan(X_validate)) = 0;
-    
-    
+
+
     % (Option 1). A logistic regression
     model = glmfit(X_develop, y_develop, 'binomial');
     y_hat = glmval(model, X_validate, 'logit');
-    
+
     % (Option 2). An SVM
     % model = svmtrain(y_develop, X_develop, '-q -t 2');
     % [pred,~,y_hat] = svmpredict(y_validate, X_validate, model);
-    
+
     % if (pred(1) == 0 && y_hat(1) > 0) || (pred(1) == 1 && y_hat(1) < 0)
     %     % flip the sign of dist to ensure that the AUROC is calculated properly
     %     % the AUROC expects predictions of 1 to be assigned increasing distances
     %     y_hat = -y_hat;
     % end
-    
+
     % Calculate our performance metric: the AUROC.
     [~, ~, auroc(k)] = calcRoc(y_hat, y_validate);
 end
