@@ -34,7 +34,7 @@ select
       -- end the case statement
       end
     ) as HeartRate_Min
-    
+
     -- note we wrapped the above in "min()"
     -- this takes the minimum of all values inside, and *ignores* nulls
     -- by calling this on our case statement, we are ignoring all values except those with ITEMID = 211
