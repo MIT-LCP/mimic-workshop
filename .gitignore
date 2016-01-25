@@ -1,3 +1,6 @@
+# matlab temp files
+*.m~
+
 # CSV files with example data
 example-patient/*.csv
 
