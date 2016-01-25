@@ -25,8 +25,12 @@ else
             error(conn.Message)
     end
 end
-% 'org.sqlite.JDBC',['jdbc:sqlite:' pwd filesep 'data' filesep 'mimiciii_v1_3_mini.sqlitejdbc:sqlite:' pwd filesep 'data' filesep 'mimiciii_v1_3_mini.sqlite']
-    
+
+% NOTE: below is how we used to connect to the local sqlite file
+%   javaclasspath('sqlite-jdbc-3.8.11.2.jar') % use this for SQLite
+%   conn = database('','','',...
+%     'org.sqlite.JDBC',['jdbc:sqlite:' pwd filesep 'data' filesep 'mimiciii_v1_3_demo.sqlite']);
+
 % it's convenient to have our database connection return "dataset" data
 % we can extract header information from dataset outputs
 setdbprefs('DataReturnFormat','dataset')
